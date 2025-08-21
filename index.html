@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pixel Wizard PFP Maker</title>
+  <style>
+    :root{
+      --bg:#0b0b10; --panel:#141424; --panel-2:#1b1b2e; --ink:#e7e7ee; --muted:#9aa1b2; --brand:#7c3aed; --ok:#22c55e;
+    }
+    *{box-sizing:border-box}
+    body{margin:0; font-family:Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+      background:linear-gradient(180deg, #0b0b10, #11111a 40%, #0b0b10); color:var(--ink)}
+    header{display:flex; gap:12px; align-items:center; padding:18px 20px; border-bottom:1px solid #23233a; position:sticky; top:0; background:#0e0e15; z-index:10}
+    header h1{font-size:18px; margin:0; font-weight:700; letter-spacing:.2px}
+    header .badge{font-size:12px; color:#c6c7d4; background:#212138; padding:4px 8px; border-radius:999px}
+
+    .wrap{display:grid; grid-template-columns: 360px 1fr; gap:16px; padding:16px; max-width:1200px; margin:0 auto}
+
+    .panel{background:var(--panel); border:1px solid #23233a; border-radius:16px; padding:14px}
+    .panel h2{margin:0 0 10px 0; font-size:14px; color:#cfd3e6; font-weight:700; letter-spacing:.2px}
+    .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+    .row + .row{margin-top:10px}
+
+    .btn{appearance:none; border:1px solid #2b2b45; background:#1b1b2e; color:#dfe3f7; padding:10px 12px; border-radius:10px; cursor:pointer; font-weight:600; font-size:13px}
+    .btn:hover{background:#21213a}
+    .btn.primary{background:var(--brand); border-color:#6b2ed6}
+    .btn.primary:hover{filter:brightness(1.05)}
+    .btn.ghost{background:transparent}
+    .btn.small{padding:6px 8px; font-size:12px}
+
+    .select, .number, .text{appearance:none; border:1px solid #2b2b45; background:#101022; color:#e8eaf6; padding:10px 12px; border-radius:10px; font-size:13px}
+    .select{min-width:160px}
+    .number{width:90px}
+
+    .swatch{width:28px; height:28px; border-radius:6px; border:1px solid #2b2b45; cursor:pointer}
+    input[type="color"]{appearance:none; border:none; padding:0; width:28px; height:28px; background:transparent}
+
+    .canvasWrap{display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap}
+    .grid{display:grid; gap:1px; background:#0a0a14; padding:12px; border-radius:14px; border:1px solid #23233a}
+    .pixel{width:22px; height:22px; background:#000; border-radius:4px; cursor:crosshair; transition:transform .05s}
+    .pixel:hover{transform:scale(1.06)}
+
+    .legend{display:flex; gap:8px; flex-wrap:wrap}
+    .chip{display:flex; align-items:center; gap:8px; background:#17172a; border:1px solid #2b2b45; padding:6px 8px; border-radius:999px; font-size:12px}
+    .chip .dot{width:14px; height:14px; border-radius:4px; border:1px solid #0006}
+
+    .footer{padding:16px; text-align:center; color:var(--muted)}
+    .tip{font-size:12px; color:var(--muted)}
+
+    @media (max-width: 980px){ .wrap{grid-template-columns: 1fr} }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Pixel Wizard PFP Maker</h1>
+    <span class="badge">Standalone · Exports JPEG</span>
+  </header>
+
+  <div class="wrap">
+    <!-- Controls -->
+    <section class="panel" id="controls">
+      <h2>Controls</h2>
+      <div class="row">
+        <label>Template</label>
+        <select class="select" id="templateSelect">
+          <option value="wizard">Wizard</option>
+          <option value="wizard_cs">Wizard + Headset (CS)</option>
+        </select>
+        <button class="btn small" id="applyTemplate">Apply</button>
+        <button class="btn small" id="clearGrid">Clear</button>
+      </div>
+
+      <div class="row">
+        <label>Brush</label>
+        <input type="color" id="colorPicker" value="#6b21a8" title="Brush Color" />
+        <button class="btn small" id="eyedrop">Eyedropper</button>
+        <label> Pixel Size</label>
+        <input class="number" id="pixelSize" type="number" min="8" max="64" step="1" value="22" />
+        <button class="btn small" id="resizePixels">Resize</button>
+      </div>
+
+      <div class="row">
+        <label>Fill Group</label>
+        <select class="select" id="groupSelect">
+          <option value="hat">Hat</option>
+          <option value="robe">Robe</option>
+          <option value="headset">Headset</option>
+          <option value="background">Background</option>
+        </select>
+        <input type="color" id="groupColor" value="#6b21a8" />
+        <button class="btn" id="fillGroup">Fill</button>
+      </div>
+
+      <div class="row">
+        <label>Quick Palette</label>
+        <div class="legend" id="quickPalette"></div>
+      </div>
+
+      <div class="row">
+        <button class="btn primary" id="exportJpeg">Export JPEG</button>
+        <input class="number" id="exportScale" type="number" min="8" max="90" step="1" value="32" />
+        <span class="tip">Pixel scale</span>
+      </div>
+      <div class="row">
+        <label><input type="checkbox" id="exportWithGrid" checked> Include grid lines in export</label>
+        <span class="tip">Always exports as 1:1 square</span>
+      </div>
+
+      <div class="row">
+        <label><input type="checkbox" id="toggleGridLines" checked> Grid lines</label>
+        <span class="tip">Click & drag to paint. Right‑click = erase.</span>
+      </div>
+    </section>
+
+    <!-- Workspace -->
+    <section class="panel">
+      <h2>Canvas</h2>
+      <div class="canvasWrap">
+        <div id="grid" class="grid"></div>
+        <div>
+          <h3 style="margin:0 0 8px 0; font-size:13px; color:#cfd3e6">Layers / Groups</h3>
+          <div class="legend">
+            <div class="chip"><span class="dot" style="background:#6b21a8"></span> Hat</div>
+            <div class="chip"><span class="dot" style="background:#7e22ce"></span> Robe</div>
+            <div class="chip"><span class="dot" style="background:#22c55e"></span> Accent</div>
+            <div class="chip"><span class="dot" style="background:#000000"></span> Background</div>
+            <div class="chip"><span class="dot" style="background:#c0c7ff"></span> Headset</div>
+          </div>
+          <div style="margin-top:12px" class="tip">Use “Template: Wizard + Headset (CS)” to overlay a headset icon you can recolor as a block.</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <footer class="footer">Made for Customer Support profile pics · No external libraries · Everything runs locally.</footer>
+
+  <canvas id="exportCanvas" style="display:none"></canvas>
+
+  <script>
+    // -------------------------
+    // Helpers
+    // -------------------------
+    const Colors = {
+      black: '#000000',
+      purple: '#7e22ce',
+      purpleDark: '#6b21a8',
+      green: '#22c55e',
+      headset: '#c0c7ff'
+    };
+
+    const quickPaletteColors = [
+      Colors.purpleDark, Colors.purple, '#9333ea', '#a855f7', '#d946ef',
+      Colors.green, '#16a34a', '#65a30d', '#fde047', '#f59e0b', '#ef4444', '#60a5fa', '#94a3b8', Colors.black, '#ffffff'
+    ];
+
+    // Convert the provided emoji art into template strings using P (purple), G (green), B (black)
+    // We'll parse into a rectangular matrix by padding with B.
+
+    const wizardEmoji = [
+      'BBBBBBBPPP',
+      'BBBBBBBPPPP',
+      'BBBBBBPPPGPP',
+      'BBBBBPPP',
+      'BBBBBPPP',
+      'BBBBBPPP',
+      'BBBBPPPPP',
+      'BBBBPPPPP',
+      'BBBPPPPPPP',
+      'BBBPPPPPPP',
+      'BBPPPPPPPPP',
+      'BPPPPPPPPPPP',
+      'PPPPPPPPPPPPP',
+      'BBBPPPPPPP',
+      'BBPPBBB BBPP'.replace(/\s/g,''),
+      'BBPPBBB BBPP'.replace(/\s/g,''),
+      'BPPPBBB PPPP'.replace(/\s/g,''),
+      'BBBPPP BPPP'.replace(/\s/g,''),
+      'BBBBPPPPP',
+      'BBBBBPPP',
+      'BBBBBBP'
+    ];
+
+    // Headset overlay mask (S = headset) roughly around upper-middle
+    // Same dimensions as padded grid; positions with 'S' will be added atop
+    const headsetMaskEmoji = [
+      'BBBBBBBBBBBBB',
+      'BBBBBBBBBBBBB',
+      'BBBBBBBBBBBBB',
+      'BBBBBBBBBBBBB',
+      'BBBBSSSSSBBBB',
+      'BBBSSBBBBSSBB',
+      'BBBSBBBBBBSBB',
+      'BBBSBBBBBBSBB',
+      'BBBSSBBBBSSBB',
+      'BBBBSSSSSBBBB',
+      'BBBBBBBBBBBBB',
+      'BBBBBBBBBBBBB',
+      'BBBBBBBBBBBBB',
+      'BBBBBBBBBBBBB',
+      'BBBBBBBBBBBBB',
+      'BBBBBBBBBBBBB',
+      'BBBBBBBBBBBBB',
+      'BBBBBBBBBBBBB',
+      'BBBBBBBBBBBBB',
+      'BBBBBBBBBBBBB',
+      'BBBBBBBBBBBBB'
+    ];
+
+    // Group mask for bulk fills (H = hat, R = robe, B = background, A = accent/trim)
+    // These are rough zones that align with the wizard art.
+    const groupMaskEmoji = [
+      'HHHHHHHAAA',
+      'HHHHHHHAAAA',
+      'HHHHHHAAAGAA',
+      'HHHHHAAA',
+      'HHHHHAAA',
+      'HHHHHAAA',
+      'HHHHAAAAA',
+      'HHHHAAAAA',
+      'HHHRAAAAAAA',
+      'HHHRAAAAAAA',
+      'H RRRRRRRRR'.replace(/\s/g,''),
+      'RRRRRRRRRRR',
+      'RRRRRRRRRRR',
+      'BBBRRRRRRR',
+      'BBRRBBB BBRR'.replace(/\s/g,''),
+      'BBRRBBB BBRR'.replace(/\s/g,''),
+      'BRRRBBB RRRR'.replace(/\s/g,''),
+      'BBBRRR BRRR'.replace(/\s/g,''),
+      'BBBBRRRRR',
+      'BBBBBRRR',
+      'BBBBBBB'
+    ];
+
+    // Parse to rectangular matrix
+    function padRows(rows){
+      const max = Math.max(...rows.map(r=>r.length));
+      return rows.map(r => r.padEnd(max, 'B'));
+    }
+
+    function padToSquare(rows, fill='B'){
+      // Ensure rectangular first
+      const padded = padRows(rows);
+      const h = padded.length, w = padded[0].length;
+      const n = Math.max(h, w);
+      // Horizontal centering
+      const left = Math.floor((n - w)/2);
+      const right = n - w - left;
+      const horiz = padded.map(r => fill.repeat(left) + r + fill.repeat(right));
+      // Vertical centering
+      const top = Math.floor((n - h)/2);
+      const bottom = n - h - top;
+      const blank = fill.repeat(n);
+      const vert = Array(top).fill(blank).concat(horiz, Array(bottom).fill(blank));
+      return vert;
+    }
+
+    const W_ROWS = padToSquare(wizardEmoji);
+    const G_ROWS = padToSquare(groupMaskEmoji);
+    const HS_ROWS = padToSquare(headsetMaskEmoji);
+    const H = W_ROWS.length; const W = W_ROWS[0].length; // square N x N
+
+    // Build initial color grid from wizard template
+    function templateToGrid(rows){
+      const grid = [];
+      for(let y=0;y<rows.length;y++){
+        const row = [];
+        for(let x=0;x<rows[0].length;x++){
+          const c = rows[y][x];
+          if(c === 'P') row.push(Colors.purpleDark);
+          else if(c === 'G') row.push(Colors.green);
+          else row.push(Colors.black);
+        }
+        grid.push(row);
+      }
+      return grid;
+    }
+
+    // Build group map
+    function templateToGroups(rows){
+      const map = [];
+      for(let y=0;y<rows.length;y++){
+        const row = [];
+        for(let x=0;x<rows[0].length;x++){
+          const c = rows[y][x];
+          if(c === 'H') row.push('hat');
+          else if(c === 'R') row.push('robe');
+          else if(c === 'A') row.push('accent');
+          else row.push('background');
+        }
+        map.push(row);
+      }
+      return map;
+    }
+
+    // Headset mask
+    function templateToHeadset(rows){
+      const mask = [];
+      for(let y=0;y<rows.length;y++){
+        const row = [];
+        for(let x=0;x<rows[0].length;x++){
+          row.push(rows[y][x] === 'S');
+        }
+        mask.push(row);
+      }
+      return mask;
+    }
+
+    let gridColors = templateToGrid(W_ROWS);
+    let groupMap = templateToGroups(G_ROWS);
+    const headsetMask = templateToHeadset(HS_ROWS);
+
+    // DOM refs
+    const gridEl = document.getElementById('grid');
+    const colorPicker = document.getElementById('colorPicker');
+    const groupColor = document.getElementById('groupColor');
+    const groupSelect = document.getElementById('groupSelect');
+    const templateSelect = document.getElementById('templateSelect');
+
+    // Build grid
+    let mouseDown = false; let erasing = false; let eyedropMode = false; let showGridLines = true;
+
+    function renderGrid(){
+      gridEl.innerHTML = '';
+      gridEl.style.gridTemplateColumns = `repeat(${W}, 1fr)`;
+      for(let y=0;y<H;y++){
+        for(let x=0;x<W;x++){
+          const d = document.createElement('div');
+          d.className = 'pixel';
+          d.style.background = gridColors[y][x];
+          d.dataset.x = x; d.dataset.y = y;
+          if(!showGridLines) { d.style.margin='0'; gridEl.style.gap='0' } else { gridEl.style.gap='1px' }
+
+          d.addEventListener('mousedown', (e)=>{
+            mouseDown = true;
+            erasing = e.button === 2;
+            if(eyedropMode){ colorPicker.value = rgbToHex(d.style.background); eyedropMode=false; return; }
+            paintPixel(d, erasing ? Colors.black : colorPicker.value);
+          });
+          d.addEventListener('mouseenter', ()=>{
+            if(mouseDown){ paintPixel(d, erasing ? Colors.black : colorPicker.value); }
+          });
+          d.addEventListener('contextmenu', e=>e.preventDefault());
+          gridEl.appendChild(d);
+        }
+      }
+    }
+
+    function paintPixel(div, color){
+      const x = +div.dataset.x, y = +div.dataset.y;
+      gridColors[y][x] = color;
+      div.style.background = color;
+    }
+
+    window.addEventListener('mouseup', ()=>{ mouseDown = false; erasing=false; });
+
+    // Export helpers
+    function renderToCanvas({scale=32}){
+      const canvas = document.getElementById('exportCanvas');
+      const unit = Math.max(8, Math.min(90, +scale||32));
+      const side = W * unit; // W===H after square padding
+
+      canvas.width = side;
+      canvas.height = side;
+      const ctx = canvas.getContext('2d');
+      // Fill background
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0,0,side,side);
+
+      // Draw pixels
+      for(let y=0;y<H;y++){
+        for(let x=0;x<W;x++){
+          ctx.fillStyle = gridColors[y][x];
+          ctx.fillRect(x*unit, y*unit, unit, unit);
+        }
+      }
+
+      // Optional grid overlay (full 1:1)
+      const includeGrid = document.getElementById('exportWithGrid')?.checked;
+      if(includeGrid){
+        ctx.save();
+        ctx.strokeStyle = '#0a0a14';
+        ctx.lineWidth = Math.max(1, Math.floor(unit * 0.06));
+        // Vertical lines
+        for(let x=0; x<=W; x++){
+          const gx = x*unit + 0.5; // crisp
+          ctx.beginPath();
+          ctx.moveTo(gx, 0.5);
+          ctx.lineTo(gx, side + 0.5);
+          ctx.stroke();
+        }
+        // Horizontal lines
+        for(let y=0; y<=H; y++){
+          const gy = y*unit + 0.5;
+          ctx.beginPath();
+          ctx.moveTo(0.5, gy);
+          ctx.lineTo(side + 0.5, gy);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+      return canvas;
+    }
+
+    function triggerDownloadFromCanvas(canvas, filename){
+      const data = canvas.toDataURL('image/jpeg', 0.92);
+      const a = document.createElement('a');
+      a.href = data; a.download = filename; a.rel = 'noopener';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    document.getElementById('exportJpeg').addEventListener('click', ()=>{
+      const scale = document.getElementById('exportScale').value;
+      const cvs = renderToCanvas({scale});
+      triggerDownloadFromCanvas(cvs, `wizard_pfp_${Date.now()}.jpg`);
+    });
+
+    function downloadDataUrl(dataUrl, filename){
+      const a = document.createElement('a');
+      a.href = dataUrl; a.download = filename; a.click();
+    }
+
+    // Group Fill
+    document.getElementById('fillGroup').addEventListener('click', ()=>{
+      const g = groupSelect.value; const col = groupColor.value;
+      for(let y=0;y<H;y++){
+        for(let x=0;x<W;x++){
+          if(g === 'headset'){
+            if(headsetMask[y]?.[x]) gridColors[y][x] = col;
+          } else if(groupMap[y][x] === g){
+            gridColors[y][x] = col;
+          }
+        }
+      }
+      renderGrid();
+    });
+
+    // Template handling
+    document.getElementById('applyTemplate').addEventListener('click', applyTemplateFromSelect);
+    function applyTemplateFromSelect(){
+      const t = templateSelect.value;
+      gridColors = templateToGrid(W_ROWS); // reset to base wizard first
+      if(t === 'wizard_cs'){
+        // Overlay headset in its color
+        for(let y=0;y<H;y++){
+          for(let x=0;x<W;x++){
+            if(headsetMask[y][x]) gridColors[y][x] = Colors.headset;
+          }
+        }
+      }
+      renderGrid();
+    }
+
+    // Clear grid
+    document.getElementById('clearGrid').addEventListener('click', ()=>{
+      for(let y=0;y<H;y++){
+        for(let x=0;x<W;x++) gridColors[y][x] = Colors.black;
+      }
+      renderGrid();
+    });
+
+    // Eyedropper
+    document.getElementById('eyedrop').addEventListener('click', ()=>{
+      eyedropMode = true;
+    });
+
+    // Toggle grid lines
+    document.getElementById('toggleGridLines').addEventListener('change', (e)=>{
+      showGridLines = !!e.target.checked; renderGrid();
+    });
+
+    // Resize pixel tiles (editor only)
+    document.getElementById('resizePixels').addEventListener('click', ()=>{
+      const size = Math.max(8, Math.min(64, +document.getElementById('pixelSize').value||22));
+      document.querySelectorAll('.pixel').forEach(p=>{p.style.width=size+'px'; p.style.height=size+'px'});
+    });
+
+    // Quick palette
+    const qp = document.getElementById('quickPalette');
+    quickPaletteColors.forEach(c=>{
+      const b = document.createElement('button');
+      b.className='swatch'; b.style.background=c; b.title=c;
+      b.addEventListener('click', ()=>{ colorPicker.value = c; groupColor.value = c; });
+      qp.appendChild(b);
+    });
+
+    function rgbToHex(rgb){
+      // Accepts e.g. "rgb(110, 34, 220)" or "#rrggbb"
+      if(rgb.startsWith('#')) return rgb;
+      const m = rgb.match(/\d+/g); if(!m) return '#000000';
+      const [r,g,b] = m.map(n=>parseInt(n,10));
+      return '#' + [r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
+    }
+
+    // Init
+    renderGrid();
+  </script>
+</body>
+</html>
